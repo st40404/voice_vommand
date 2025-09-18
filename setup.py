@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            '1_get_command = voice_command.1_get_command:main',
-            '2_command_to_nav2 = voice_command.2_command_to_nav2:main',
+            '1_get_command                   = voice_command.1_get_command:main',
+            '2_command_to_nav2               = voice_command.2_command_to_nav2:main',
         ],
     },
 )

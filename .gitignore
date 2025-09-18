@@ -1,0 +1,4 @@
+/model
+log*
+unsloth_compiled_cache
+__pycache__*

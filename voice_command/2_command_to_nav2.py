@@ -100,7 +100,7 @@ class CommandNode(Node):
     def get_result_callback(self, future):
         status = future.result().status
         if status == 4:  # SUCCEEDED
-            self.get_logger().info('導航成功 ✅')
+            self.get_logger().info('導航成功')
         else:
             self.get_logger().warn(f'導航失敗，狀態碼: {status}')
 
