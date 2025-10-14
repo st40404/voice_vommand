@@ -41,27 +41,23 @@ model, tokenizer = FastLanguageModel.from_pretrained(
 
 from transformers import TextStreamer
 
-# prompt = """<|im_start|>user\n
-# Input: kitchen locate at (1,1)
-# Output: OK, I got it
+# prompt = """<|im_start|>user
+# balcony locate at (2,8)
+# bathroom locate at (7,2)
+# living room locate at (5,7)
+# where is balcony<|im_end|>
+# <|im_start|>assistant\n"""
 
-# Input: bedroom locate at (2,2)
-# Output: OK, I got it
+prompt = """<|im_start|>user
+bedroom locate at (0,4)
+hallway locate at (5,3)
+office locate at (2,7)
+pantry locate at (9,-5)
+balcony locate at (4,4)
+which coordinates correspond to balcony?<|im_end|>
+<|im_start|>assistant\n"""
 
-# Input: bathroom locate at (3,3)
-# Output: OK, I got it
 
-# Input: where is bathroom?
-# Output: <|im_end|><|im_start|>assistant
-# """
-
-prompt = """<|im_start|>user\n
-balcony locate at (2,8)\n
-bathroom locate at (7,2)\n
-living room locate at (5,7)\n
-where is balcony<|im_end|>\n
-<|im_start|>assistant\n
-"""
 
 print("------------------------------------")
 
@@ -73,11 +69,13 @@ streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 outputs = model.generate(
     **inputs,
     max_new_tokens=150,
-    do_sample=False,
+    do_sample=True,
     temperature=0.1,
-    top_k=40,
-    top_p=0.8,
-    eos_token_id=tokenizer.convert_tokens_to_ids("<|im_end|>"),
+    top_k=30,
+    top_p=0.9,
+    eos_token_id=[
+        tokenizer.convert_tokens_to_ids("<|im_end|>"),
+        tokenizer.convert_tokens_to_ids("<|end_of_conversation|>")],
     pad_token_id=tokenizer.pad_token_id,
     streamer=streamer
 )
