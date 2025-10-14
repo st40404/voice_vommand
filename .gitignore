@@ -3,3 +3,4 @@ log*
 unsloth_compiled_cache
 __pycache__*
 /voice_command/TinyLlama*
+/dataset
