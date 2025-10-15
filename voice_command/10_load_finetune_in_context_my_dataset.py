@@ -16,8 +16,8 @@ from unsloth import FastLanguageModel
 # model_name = "./TinyLlama-finetune-mapping"
 # model_name = "./TinyLlama-prefinetune-mapping-1"
 # model_name = "./TinyLlama-prefinetune-mapping-4"
-model_name = "./TinyLlama-prefinetune-mapping"
-
+# model_name = "./TinyLlama-prefinetune-mapping"
+model_name = "./TinyLlama-prefinetune-mapping-increase"
 
 # 下載 & 載入模型 (用 Unsloth 最佳化版本)
 print(f"載入模型：{model_name}...")
@@ -45,17 +45,18 @@ from transformers import TextStreamer
 # balcony locate at (2,8)
 # bathroom locate at (7,2)
 # living room locate at (5,7)
-# where is balcony<|im_end|>
+# where is bathroom?<|im_end|>
 # <|im_start|>assistant\n"""
 
 prompt = """<|im_start|>user
 bedroom locate at (0,4)
-hallway locate at (5,3)
-office locate at (2,7)
-pantry locate at (9,-5)
-balcony locate at (4,4)
-which coordinates correspond to balcony?<|im_end|>
-<|im_start|>assistant\n"""
+balcony locate at (5,3)
+hallway locate at (2,7)
+office locate at (9,-5)
+pantry locate at (4,4)
+where is the office?<|im_end|>
+<|im_start|>assistant
+"""
 
 
 
@@ -69,7 +70,7 @@ streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 outputs = model.generate(
     **inputs,
     max_new_tokens=150,
-    do_sample=True,
+    do_sample=False,
     temperature=0.1,
     top_k=30,
     top_p=0.9,
