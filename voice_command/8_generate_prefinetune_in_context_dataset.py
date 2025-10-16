@@ -11,16 +11,7 @@ LOCATIONS = [
 
 # 查詢句模板
 QUERY_TEMPLATES = [
-    "where is {place}?",
-    "what is the location of {place}?",
-    "tell me {place}'s coordinates",
-    "please provide the location of {place}",
-    "can you give me {place}'s coordinates?",
-    "find the position of {place}",
-    "which coordinates correspond to {place}?",
-    "what are the coordinates of {place}?",
-    "locate {place} for me",
-    "show me where {place} is"
+    "what is the location of {place}?"
 ]
 
 def generate_mapping_dataset(n_samples=20000, filename="mapping_dataset.jsonl"):

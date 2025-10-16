@@ -41,12 +41,12 @@ for _ in range(20000):
         y = random.randint(-10, 10)
         coord_map[name] = (x, y)
         loc_lines.append(random.choice(location_patterns).format(name=name, x=x, y=y))
-    
+
     # 隨機選一個地點來詢問
     target = random.choice(chosen)
     question = random.choice(question_patterns).format(target=target)
     answer = f"The coordinates of the {target} are ({coord_map[target][0]},{coord_map[target][1]})."
-    
+
     # 組合 user/assistant 格式
     user_prompt = "\n".join(loc_lines) + "\n" + question
     assistant_reply = answer

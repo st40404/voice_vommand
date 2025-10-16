@@ -14,10 +14,9 @@ from unsloth import FastLanguageModel
 # 如果你已經上傳到 Hugging Face Hub，可以從那裡下載
 # 例如: model_name = "st40404/TinyLlama-finetune-hermes-end-conversation-gemini"
 # model_name = "./TinyLlama-finetune-mapping"
-# model_name = "./TinyLlama-prefinetune-mapping-1"
-# model_name = "./TinyLlama-prefinetune-mapping-4"
 # model_name = "./TinyLlama-prefinetune-mapping"
-model_name = "./TinyLlama-prefinetune-mapping-increase"
+# model_name = "./TinyLlama-prefinetune-mapping-increase"
+model_name = "./TinyLlama-prefinetune-mapping-simple"
 
 # 下載 & 載入模型 (用 Unsloth 最佳化版本)
 print(f"載入模型：{model_name}...")
@@ -45,7 +44,7 @@ from transformers import TextStreamer
 # balcony locate at (2,8)
 # bathroom locate at (7,2)
 # living room locate at (5,7)
-# where is bathroom?<|im_end|>
+# what is the location of balcony?<|im_end|>
 # <|im_start|>assistant\n"""
 
 prompt = """<|im_start|>user
@@ -54,7 +53,7 @@ balcony locate at (5,3)
 hallway locate at (2,7)
 office locate at (9,-5)
 pantry locate at (4,4)
-where is the office?<|im_end|>
+what is the location of office?<|im_end|>
 <|im_start|>assistant
 """
 

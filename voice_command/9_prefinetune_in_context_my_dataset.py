@@ -22,13 +22,12 @@ max_seq_length = 2048
 # 第一階段訓練完成的模型路徑
 # base finetune model is "TinyLlama-finetune-mapping"
 
-# first_finetuned_model_path = "./TinyLlama-finetune-mapping"
-first_finetuned_model_path = "./TinyLlama-prefinetune-mapping"
-
+first_finetuned_model_path = "./TinyLlama-finetune-mapping"
+# first_finetuned_model_path = "./TinyLlama-prefinetune-mapping"
 
 # 第二階段微調後的模型輸出路徑和 Hugging Face Repository ID+++
-second_finetune_output_path = "./TinyLlama-prefinetune-mapping-increase"
-second_huggingface_repo_id = "st40404/TinyLlama-prefinetune-mapping-increase"
+second_finetune_output_path = "./TinyLlama-prefinetune-mapping-simple"
+second_huggingface_repo_id = "st40404/TinyLlama-prefinetune-mapping-simple"
 
 is_prefinetune = True
 
@@ -69,8 +68,8 @@ print("LoRA adapters re-initialized on the loaded model.")
 # print("Loading new dataset: mapping_dataset.jsonl")
 # dataset = load_dataset("json", data_files="./../dataset/mapping_dataset.jsonl", split="train")
 
-print("Loading new dataset: mapping_dataset_increase.jsonl")
-dataset = load_dataset("json", data_files="./../dataset/mapping_dataset_increase.jsonl", split="train")
+print("Loading new dataset: simple_mapping_dataset.jsonl")
+dataset = load_dataset("json", data_files="./../dataset/simple_mapping_dataset.jsonl", split="train")
 
 # 調整後的格式化函數，用於 MetaICL 數據
 def format_metaicl_example(example):
