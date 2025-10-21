@@ -41,11 +41,12 @@ print("Previously fine-tuned model loaded.")
 
 model = FastLanguageModel.get_peft_model(
     model,
-    r=128,
+    # r=128,
+    r=64,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                     "gate_proj", "up_proj", "down_proj",
                    ],
-    lora_alpha=32,
+    lora_alpha=16,
     lora_dropout=0,
     bias="none",
     use_gradient_checkpointing="unsloth",
@@ -58,8 +59,8 @@ print("LoRA adapters re-initialized on the loaded model.")
 ## 2. 準備新的數據集 (in_contet_learning)
 # ----------------------------------------------------------------------------------------------------
 
-print("Loading new dataset: 11_mapping_25_3_50000.jsonl")
-dataset = load_dataset("json", data_files="./../dataset/11_mapping_25_3_50000.jsonl", split="train")
+print("Loading new dataset: 11_mapping_25_3_200000.jsonl")
+dataset = load_dataset("json", data_files="./../dataset/11_mapping_25_3_200000.jsonl", split="train")
 
 # 調整後的格式化函數，用於 MetaICL 數據
 def format_metaicl_example(example):
@@ -71,6 +72,7 @@ def format_metaicl_example(example):
     # 使用您模型（TinyLlama）的聊天格式來封裝這個 ICL 任務
     # 這裡我們將整個 ICL 提示視為 'user' 的輸入，模型必須生成答案
     formatted_text = (
+        f"<|im_start|>system\nYou are a mapping assistant. Always answer only with coordinates in (x,y) format.<|im_end|>\n" # ICL 提示作為用戶輸入
         f"<|im_start|>user\n{user_prompt}<|im_end|>\n" # ICL 提示作為用戶輸入
         f"<|im_start|>assistant\n"
         f"{assistant_response}<|end_of_conversation|>\n"      # 正確答案作為模型的輸出
@@ -98,19 +100,21 @@ class TrainingLoggerCallback(TrainerCallback):
         self.log_path = log_path
         os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
         with open(self.log_path, "w") as f:
-            f.write("step\tloss\tlearning_rate\n")
+            f.write("step\ttrain_loss\tlearning_rate\teval_loss\n")
 
     def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs=None, **kwargs):
         if logs is None:
             return
         step = state.global_step
-        loss = logs.get("loss")
+        train_loss = logs.get("loss")
+        eval_loss = logs.get("eval_loss")
         lr = logs.get("learning_rate")
 
         with open(self.log_path, "a") as f:
-            loss_str = f"{loss:.6f}" if loss is not None else "N/A"
+            train_loss_str = f"{train_loss:.6f}" if train_loss is not None else "N/A"
+            eval_loss_str = f"{eval_loss:.6f}" if eval_loss is not None else "N/A"
             lr_str = f"{lr:.8f}" if lr is not None else "N/A"
-            f.write(f"{step}\t{loss_str}\t{lr_str}\n")
+            f.write(f"{step}\t{train_loss_str}\t{lr_str}\t{eval_loss_str}\n")
 
 def formatting_func_safe(batch_or_example):
     # 如果是單個 example（字典）
@@ -138,7 +142,7 @@ trainer = UnslothTrainer(
         warmup_ratio=0.1,
         # max_steps=10,
         num_train_epochs=5,
-        learning_rate=5e-6,
+        learning_rate=2e-5,
         fp16=not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_bf16_supported(),
         logging_steps=10,

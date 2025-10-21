@@ -16,39 +16,44 @@ QUERY_TEMPLATES = [
     "coordinates of {place}?"               # 技術性、簡潔
 ]
 
-def generate_improved_mapping_dataset(n_samples=50000, filename="mapping_improved.jsonl"):
+def generate_improved_mapping_dataset(n_samples=200000, filename="mapping_v2.jsonl"):
     with open(filename, "w", encoding="utf-8") as f:
-        for _ in tqdm(range(n_samples), desc="Generating improved dataset"):
-            # 隨機地點數量：3~8 個，增加長上下文訓練
-            num_locs = random.randint(3, 8)
+        for _ in tqdm(range(n_samples), desc="Generating v2 dataset"):
+            num_locs = random.randint(3, 10)  # 增加上下文長度
             chosen_locs = random.sample(LOCATIONS, k=num_locs)
-            
-            # 隨機座標，避免模式
-            coords = {loc: (random.randint(-20, 20), random.randint(-20, 20)) for loc in chosen_locs}
-            
-            # 關鍵改進：隨機選擇查詢位置（特別強調中後位置）
-            # 增加中後位置查詢的概率
-            position_weights = [0.1 if i < num_locs//2 else 0.2 for i in range(num_locs)]
-            query_idx = random.choices(range(num_locs), weights=position_weights)[0]
+            coords = {loc: (random.randint(-50, 50), random.randint(-50, 50)) for loc in chosen_locs}
+
+            # 增加負數座標比例
+            for loc in coords:
+                if random.random() < 0.7:  # 60% 機率有負數
+                    coords[loc] = (coords[loc][0] * random.choice([-1, 1]), 
+                                 coords[loc][1] * random.choice([-1, 1]))
+
+            query_idx = random.choices(range(num_locs), weights=[0.05] + [0.15]*(num_locs-1))[0]
             query_loc = chosen_locs[query_idx]
             query_sentence = random.choice(QUERY_TEMPLATES).format(place=query_loc)
             
-            # 隨機打亂順序，避免位置偏置
             random.shuffle(chosen_locs)
             coord_map = {loc: coords[loc] for loc in chosen_locs}
             
-            # 組合 input：打亂後的順序
-            input_lines = [f"{loc} locate at ({coord_map[loc][0]},{coord_map[loc][1]})" 
-                          for loc in chosen_locs]
-            input_lines.append(query_sentence)
-            
+            # 改進輸入格式：更明確的結構化提示
+            input_lines = []
+            for loc in chosen_locs:
+                x, y = coord_map[loc]
+                input_lines.append(f"{loc}: ({x},{y})")
+            input_lines.append(f"QUERY: {query_sentence}")
+            input_lines.append("ANSWER FORMAT: (x,y)")
+
             input_text = "\n".join(input_lines)
             output_text = f"({coord_map[query_loc][0]},{coord_map[query_loc][1]})"
-            
-            json.dump({"input": input_text, "output": output_text}, f, ensure_ascii=False)
+
+            # 增加格式約束
+            sample = {
+                "input": input_text,
+                "output": output_text
+            }
+            json.dump(sample, f, ensure_ascii=False)
             f.write("\n")
-    
-    print(f"✅ 已生成改進版 {n_samples} 筆 dataset：{filename}")
 
 if __name__ == "__main__":
     generate_improved_mapping_dataset()
