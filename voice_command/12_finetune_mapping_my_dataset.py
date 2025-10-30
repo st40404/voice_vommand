@@ -16,6 +16,7 @@ from transformers import TrainerCallback, TrainingArguments, TrainerState, Train
 import os
 from huggingface_hub import login
 # from peft import PeftModel
+import numpy as np
 
 max_seq_length = 2048
 
@@ -59,23 +60,27 @@ print("LoRA adapters re-initialized on the loaded model.")
 ## 2. 準備新的數據集 (in_contet_learning)
 # ----------------------------------------------------------------------------------------------------
 
-print("Loading new dataset: 11_mapping_25_3_200000.jsonl")
-dataset = load_dataset("json", data_files="./../dataset/11_mapping_25_3_200000.jsonl", split="train")
+print("Loading new dataset: 11_mapping_25_6_50000.jsonl")
+raw_dataset = load_dataset("json", data_files="./../dataset/11_mapping_25_6_50000.jsonl", split="train")
+
+# 分割訓練 / 驗證集
+split_dataset = raw_dataset.train_test_split(test_size=0.1, seed=3407)
+train_dataset = split_dataset["train"]
+eval_dataset = split_dataset["test"]
+print(f"Train samples: {len(train_dataset)}, Eval samples: {len(eval_dataset)}")
 
 # 調整後的格式化函數，用於 MetaICL 數據
 def format_metaicl_example(example):
-    # 'input' 欄位已經是 ICL 提示 (包含 k-shot 範例)
     user_prompt = example["input"]
-    # 'output' 欄位是模型需要生成的正確答案
     assistant_response = example["output"]
+    system = example["system"]
 
     # 使用您模型（TinyLlama）的聊天格式來封裝這個 ICL 任務
     # 這裡我們將整個 ICL 提示視為 'user' 的輸入，模型必須生成答案
     formatted_text = (
-        f"<|im_start|>system\nYou are a mapping assistant. Always answer only with coordinates in (x,y) format.<|im_end|>\n" # ICL 提示作為用戶輸入
+        f"<|im_start|>system\n{system}<|im_end|>\n" # ICL 提示作為用戶輸入
         f"<|im_start|>user\n{user_prompt}<|im_end|>\n" # ICL 提示作為用戶輸入
-        f"<|im_start|>assistant\n"
-        f"{assistant_response}<|end_of_conversation|>\n"      # 正確答案作為模型的輸出
+        f"<|im_start|>assistant\n{assistant_response}<|end_of_conversation|>\n"      # 正確答案作為模型的輸出
     )
 
     # 確保 icl_answer 之後有結束標記，讓模型知道在哪裡停止生成
@@ -85,11 +90,13 @@ def format_metaicl_example(example):
     example["formatted_text"] = formatted_text
     return example
 
-dataset = dataset.map(format_metaicl_example, num_proc=os.cpu_count() or 1) # 使用所有可用的 CPU 核心
+# 應用到兩個數據集
+train_dataset = train_dataset.map(format_metaicl_example, num_proc=os.cpu_count() or 1)
+eval_dataset = eval_dataset.map(format_metaicl_example, num_proc=os.cpu_count() or 1)
 # --- 關鍵修改結束 ---
 
 print("Sample formatted example:")
-print(dataset[0]["formatted_text"])
+print(train_dataset[0]["formatted_text"])
 
 # ----------------------------------------------------------------------------------------------------
 ## 3. 設定訓練參數與 Trainer
@@ -126,11 +133,30 @@ def formatting_func_safe(batch_or_example):
     else:
         raise ValueError("Unknown input type for formatting_func")
 
+def compute_metrics(eval_pred):
+    # Unsloth 會自動計算 loss
+    return {}
+
+# 自定義 callback：每 N 步評估並記錄
+class EvalLoggingCallback(TrainerCallback):
+    def __init__(self, eval_steps=200):
+        self.eval_steps = eval_steps
+        self.trainer = None   # 新增這行，給後面填入用
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if state.global_step % self.eval_steps == 0 and state.global_step > 0:
+            print(f"\n[Step {state.global_step}] Running evaluation...")
+            eval_results = self.trainer.evaluate()
+            print(f"eval_loss: {eval_results['eval_loss']:.6f}")
+
+eval_callback = EvalLoggingCallback(eval_steps=200)
+
 # 大型 dataset
 trainer = UnslothTrainer(
     model=model,
     tokenizer=tokenizer,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
     dataset_text_field="formatted_text",
     formatting_func=formatting_func_safe,  # 這裡告訴 Unsloth 用 formatted_text
     max_seq_length=max_seq_length,
@@ -141,7 +167,7 @@ trainer = UnslothTrainer(
         gradient_accumulation_steps=4,
         warmup_ratio=0.1,
         # max_steps=10,
-        num_train_epochs=5,
+        num_train_epochs=3,
         learning_rate=2e-5,
         fp16=not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_bf16_supported(),
@@ -157,8 +183,13 @@ trainer = UnslothTrainer(
         logging_dir="./logs",
     ),
 
-    callbacks=[TrainingLoggerCallback()],
+    callbacks=[
+        TrainingLoggerCallback(),
+        eval_callback
+    ],
 )
+
+eval_callback.trainer = trainer
 
 # ----------------------------------------------------------------------------------------------------
 ## 4. 開始訓練
