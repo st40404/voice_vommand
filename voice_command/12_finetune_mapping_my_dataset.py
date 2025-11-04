@@ -21,7 +21,7 @@ import numpy as np
 max_seq_length = 2048
 
 # 第一階段訓練完成的模型路徑
-first_finetuned_model_path = "TinyLlama/TinyLlama-1.1B-Chat-V0.4"
+first_finetuned_model_path = "TinyLlama/TinyLlama_v1.1"
 
 # 第二階段微調後的模型輸出路徑和 Hugging Face Repository ID
 second_finetune_output_path = "./TinyLlama-finetune-mapping"
@@ -167,7 +167,7 @@ trainer = UnslothTrainer(
         gradient_accumulation_steps=4,
         warmup_ratio=0.1,
         # max_steps=10,
-        num_train_epochs=3,
+        num_train_epochs=5,
         learning_rate=2e-5,
         fp16=not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_bf16_supported(),

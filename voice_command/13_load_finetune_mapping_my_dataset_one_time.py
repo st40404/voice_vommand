@@ -37,16 +37,28 @@ model, tokenizer = FastLanguageModel.from_pretrained(
 
 from transformers import TextStreamer
 
-user_prompt = """bedroom locate at (0,4)
-balcony locate at (5,3)
-hallway locate at (2,7)
-office locate at (9,-5)
-pantry locate at (4,4)
-QUERY: what is the location of pantry?
-ANSWER FORMAT: (x,y)"""
+# user_prompt = """storage at (-49, -39)
+# garden = 46,0
+# kitchen: [16, 17]
+# workshop → (-30,35)
+# office: [-31, 47]
+# gym: (31,-21)
+
+# question: coordinates of gym?"""
+
+user_prompt = "workshop → (9,14)\ndining room: [-50, 1]\nbalcony at (-33, 11)\nstorage → (42,-1)\nlaundry room at (9, 16)\nstudy room: [-34, -21]\n\nQuestion: what is the location of balcony?"
+
+
+# 與訓練時完全相同的格式
+system_prompt = (
+    "Extract coordinates. "
+    "Output ONLY (x,y) if found. "
+    "Output ONLY 'no such coordinates' if not found. "
+    "No extra text."
+)
 
 prompt = (
-    f"<|im_start|>system\nYou are a mapping assistant. Always answer only with coordinates in (x,y) format.<|im_end|>\n" # ICL 提示作為用戶輸入
+    f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
     f"<|im_start|>user\n{user_prompt}<|im_end|>\n"
     f"<|im_start|>assistant\n"
 )
